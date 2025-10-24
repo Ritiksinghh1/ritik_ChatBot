@@ -3,29 +3,41 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Chatbot</title>
+  <title>Perfect AI</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="container">
-    <div class="header">
+  <div class="chat-wrapper compact-mode" id="chatWrapper">
+    <header class="header">
       <h1>Perfect AI</h1>
-      <p>Your AI-powered search assistant</p>
-    </div>
-    <div id="chat-box" class="chat-box">
-      <!-- Messages will appear here -->
-    </div>
-    <div class="search-section">
-      <div class="search-container">
-        <input type="text" class="search-input" id="search-input" placeholder="Ask anything" />
-        <button class="search-btn" id="searchBtn">
-          <span>Send</span>
-        </button>
-        <button id="newChatBtn">New Chat</button>
-
+      <div class="header-controls">
+        <p>Your AI-powered companion</p>
+        <button id="toggleViewBtn" class="toggle-btn" title="Toggle fullscreen">⛶</button>
       </div>
-    </div>
+    </header>
+
+    <main id="chat-box" class="chat-box">
+      <div class="empty-state">Start a conversation 💬</div>
+    </main>
+
+    <footer class="input-section">
+      <div class="input-container">
+        <input 
+          type="text" 
+          id="search-input" 
+          placeholder="Ask me anything..." 
+          autocomplete="off"
+        />
+        <button id="searchBtn" class="send-btn">➤</button>
+        <button id="newChatBtn" class="new-chat-btn">New Chat</button>
+      </div>
+    </footer>
   </div>
+
+  <!-- Markdown + Sanitizer -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+
   <script src="script.js"></script>
 </body>
 </html>

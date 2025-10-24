@@ -1,37 +1,48 @@
 const chatBox = document.getElementById("chat-box");
 const userInput = document.getElementById("search-input");
 const searchBtn = document.getElementById("searchBtn");
-const newChatBtn = document.getElementById('newChatBtn');
-newChatBtn.onclick = startNewChat;
-
+const newChatBtn = document.getElementById("newChatBtn");
+const chatWrapper = document.getElementById("chatWrapper");
+const toggleViewBtn = document.getElementById("toggleViewBtn");
 
 window.onload = () => {
-  const savedChat = localStorage.getItem("chatHistory");
-  console.log({ savedChat });
-  if (savedChat) chatBox.innerHTML = savedChat;
-  chatBox.scrollTop = chatBox.scrollHeight;
+  const saved = localStorage.getItem("chatHistory");
+  if (saved) {
+    chatBox.innerHTML = saved;
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 };
 
-function addMessage(message, className) {
-  const msgDiv = document.createElement("div");
-  msgDiv.classList.add("message", className);
-  msgDiv.textContent = message;
-  chatBox.appendChild(msgDiv);
+// Toggle between fullscreen and compact
+toggleViewBtn.onclick = () => {
+  chatWrapper.classList.toggle("fullscreen-mode");
+  chatWrapper.classList.toggle("compact-mode");
+  toggleViewBtn.textContent = chatWrapper.classList.contains("fullscreen-mode") ? "🗗" : "⛶";
+};
+
+function addMessage(text, className, isMarkdown = false) {
+  const div = document.createElement("div");
+  div.classList.add("message", className);
+
+  if (isMarkdown) {
+    const cleanHTML = DOMPurify.sanitize(marked.parse(text));
+    div.innerHTML = cleanHTML;
+  } else {
+    div.textContent = text;
+  }
+
+  chatBox.appendChild(div);
   chatBox.scrollTop = chatBox.scrollHeight;
 }
-
-function startNewChat() {
-  chatBox.innerHTML = ''; // Clear chat display
-  localStorage.removeItem('chatHistory'); // Clear saved chat
-  userInput.value = ''; // Clear input field
-  userInput.focus(); // Focus input for user
-}
-
 
 function showTyping() {
   const typingDiv = document.createElement("div");
   typingDiv.classList.add("message", "bot-message");
-  typingDiv.textContent = "AI is typing ....";
+  typingDiv.innerHTML = `
+    <div class="typing-dots">
+      <span></span><span></span><span></span>
+    </div>
+  `;
   chatBox.appendChild(typingDiv);
   chatBox.scrollTop = chatBox.scrollHeight;
   return typingDiv;
@@ -41,55 +52,47 @@ async function getBotReply(userMessage) {
   const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
   try {
-    const response = await fetch(url, {
+    const res = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-goog-api-key": "AIzaSyA3tE9ngqYkXIuruE3XPR2TFLJ2_BbBBxI" // Replace with your actual API key
+        "x-goog-api-key": "AIzaSyA3tE9ngqYkXIuruE3XPR2TFLJ2_BbBBxI"
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: userMessage }] }]
       })
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      console.error("API Error:", data);
-      return data?.error?.message || "Error fetching response.";
-    }
-
-    // Return normal api reply outside the if block
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't get that.";
-
-  } catch (error) {
-    console.error("Fetch error:", error);
-    return "Error fetching reply.";
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error?.message || "API Error");
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn’t process that.";
+  } catch (err) {
+    console.error(err);
+    return "⚠️ Error fetching reply.";
   }
 }
 
-
-searchBtn.onclick = async () => {
-  const message = userInput.value.trim();
-  if (message === "") return;
-
-  addMessage(message, "user-message");
+async function handleSend() {
+  const msg = userInput.value.trim();
+  if (!msg) return;
   userInput.value = "";
 
-  const typingDiv = showTyping();
+  document.querySelector(".empty-state")?.remove();
+  addMessage(msg, "user-message");
 
-  try {
-    const botReply = await getBotReply(message);
-    typingDiv.remove();
-    addMessage(botReply, "bot-message");
-    localStorage.setItem("chatHistory", chatBox.innerHTML);
-  } catch (err) {
-    typingDiv.remove();
-    addMessage("Error fetching reply.", "bot-message");
-    console.error(err);
-  }
+  const typing = showTyping();
+  const reply = await getBotReply(msg);
+  typing.remove();
+  addMessage(reply, "bot-message", true);
+
+  localStorage.setItem("chatHistory", chatBox.innerHTML);
+}
+
+searchBtn.onclick = handleSend;
+userInput.addEventListener("keypress", (e) => e.key === "Enter" && handleSend());
+
+newChatBtn.onclick = () => {
+  chatBox.innerHTML = '<div class="empty-state">Start a conversation 💬</div>';
+  userInput.value = "";
+  localStorage.removeItem("chatHistory");
 };
-
-userInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") searchBtn.onclick();
-});
